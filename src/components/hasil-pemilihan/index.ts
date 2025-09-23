@@ -1,0 +1,1 @@
+export { HasilPemilihan } from './HasilPemilihan'

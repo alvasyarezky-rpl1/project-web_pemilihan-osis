@@ -1,0 +1,1 @@
+export { Bantuan } from './Bantuan'

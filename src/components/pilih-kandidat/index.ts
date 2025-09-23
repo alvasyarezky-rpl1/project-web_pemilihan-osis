@@ -1,0 +1,1 @@
+export { PilihKandidat } from './PilihKandidat'

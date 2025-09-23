@@ -1,0 +1,1 @@
+export { ProfilKandidat } from './ProfilKandidat'

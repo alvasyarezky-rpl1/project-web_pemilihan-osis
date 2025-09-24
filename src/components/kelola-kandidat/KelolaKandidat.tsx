@@ -105,25 +105,21 @@ export function KelolaKandidat() {
     setShowForm(true)
   }
 
-  async function uploadPhotoToStorage(file: File): Promise<string> {
-    if (DEMO_MODE) {
-      // Demo mode: skip remote upload, use local preview URL
-      return URL.createObjectURL(file)
-    }
-    const path = `candidates/${Date.now()}-${file.name}`
-    const { error } = await supabase.storage
-      .from('candidate-photos')
-      .upload(path, file, { upsert: true })
-    if (error) throw error
-    const { data } = supabase.storage.from('candidate-photos').getPublicUrl(path)
-    return data.publicUrl
+  async function fileToDataUrl(file: File): Promise<string> {
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(file)
+    })
   }
 
   async function handleFiles(files: FileList | null) {
     const file = files?.[0]
     if (!file) return
     try {
-      const url = await uploadPhotoToStorage(file)
+      // Convert file to data URL and store it directly in photo_url
+      const url = await fileToDataUrl(file)
       setFormData(prev => ({ ...prev, photo_url: url }))
       toast.success('Foto berhasil diunggah')
     } catch (e) {

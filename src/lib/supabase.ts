@@ -37,6 +37,9 @@ if (!DEMO_MODE) {
 
 export { supabase, DEMO_MODE }
 
+// Storage bucket constants
+export const CANDIDATE_BUCKET = process.env.NEXT_PUBLIC_CANDIDATE_BUCKET || 'candidate-photos'
+
 // Database types
 // Updated schema types to match new database structure
 export interface ElectionSettings {

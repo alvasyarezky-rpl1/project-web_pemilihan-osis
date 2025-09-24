@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 // Build remote patterns dynamically from NEXT_PUBLIC_SUPABASE_URL
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const candidateBucket = process.env.NEXT_PUBLIC_CANDIDATE_BUCKET || 'candidate-photos'
 const remotePatterns: Array<{ protocol: 'https'; hostname: string; pathname: string }> = []
 
 if (supabaseUrl) {
@@ -10,7 +11,7 @@ if (supabaseUrl) {
     remotePatterns.push({
       protocol: 'https',
       hostname,
-      pathname: '/storage/v1/object/public/candidate-photos/**',
+      pathname: `/storage/v1/object/public/${candidateBucket}/**`,
     })
   } catch {}
 }

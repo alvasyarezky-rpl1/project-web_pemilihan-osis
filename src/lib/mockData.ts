@@ -1,6 +1,15 @@
-import { User, Candidate, Election } from './supabase'
+import { User, Election } from './supabase'
 
 // Mock data untuk demo
+interface Candidate {
+  id: string
+  nama: string
+  foto_url: string
+  visi: string
+  misi: string
+  program_kerja: string
+  tanggal_dibuat: string
+}
 export const mockUser: User = {
   id: 'demo-user-1',
   name: 'Admin Demo',

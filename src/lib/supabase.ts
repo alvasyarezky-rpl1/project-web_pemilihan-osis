@@ -87,3 +87,11 @@ export interface User {
   role: 'admin' | 'panitia' | 'member'
   created_at: string
 }
+
+// Minimal election type for demo/mock usage
+export interface Election {
+  id: string
+  start_date: string
+  end_date: string
+  is_active: boolean
+}

@@ -20,7 +20,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function PilihKandidat() {
-  useAuth()
+  const { isMember } = useAuth()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null)
   const [selectedWakil, setSelectedWakil] = useState<number | null>(null)
@@ -437,10 +437,12 @@ export function PilihKandidat() {
                     <h4 className="font-medium text-sm text-muted-foreground mb-1">Misi</h4>
                     <p className="text-sm line-clamp-3">{candidate.mission}</p>
                   </div>
-                  <div className="flex items-center justify-center gap-3 pt-2">
-                    <Button variant="outline" onClick={() => toast.info('Detail kandidat belum diimplementasikan')}>Lihat Detail</Button>
-                    <Button onClick={() => { if (!canVote) return; setSelectedCandidate(candidate.id); setShowVoterForm(true) }}>Pilih</Button>
-                  </div>
+                  {isMember && (
+                    <div className="flex items-center justify-center gap-3 pt-2">
+                      <Button variant="outline" onClick={() => toast.info('Detail kandidat belum diimplementasikan')}>Lihat Detail</Button>
+                      <Button onClick={() => { if (!canVote) return; setSelectedCandidate(candidate.id); setShowVoterForm(true) }}>Pilih</Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

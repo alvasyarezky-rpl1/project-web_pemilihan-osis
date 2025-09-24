@@ -29,17 +29,17 @@ function DashboardContent() {
         </div>
       )
     } else if (isAdmin || isPanitia) {
-      // Admin/Panitia layout: Quick Actions + Recent Activity (remove notifications)
+      // Admin/Panitia layout: place Recent Activity on the left to avoid center-heavy layout
       return (
-        <div className="px-4 lg:px-6 grid gap-4 md:grid-cols-2 lg:grid-cols-16">
-          {/* Quick Actions */}
-          <div className="lg:col-span-5">
-            <QuickActions />
-          </div>
-          
-          {/* Recent Activity */}
-          <div className="lg:col-span-6">
+        <div className="px-4 lg:px-6 grid gap-4 md:grid-cols-2 lg:grid-cols-16 items-start">
+          {/* Recent Activity (left) */}
+          <div className="lg:col-span-7 order-1">
             <RecentActivity />
+          </div>
+
+          {/* Quick Actions (right) */}
+          <div className="lg:col-span-5 order-2">
+            <QuickActions />
           </div>
         </div>
       )

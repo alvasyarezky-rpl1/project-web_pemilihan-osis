@@ -105,26 +105,22 @@ export function KelolaKandidat() {
     setShowForm(true)
   }
 
-  async function fileToDataUrl(file: File): Promise<string> {
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(String(reader.result))
-      reader.onerror = () => reject(reader.error)
-      reader.readAsDataURL(file)
-    })
-  }
-
   async function handleFiles(files: FileList | null) {
     const file = files?.[0]
     if (!file) return
     try {
-      // Convert file to data URL and store it directly in photo_url
-      const url = await fileToDataUrl(file)
+      // Convert to data URL and store directly in photo_url
+      const url = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result))
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(file)
+      })
       setFormData(prev => ({ ...prev, photo_url: url }))
-      toast.success('Foto berhasil diunggah')
+      toast.success('Foto siap disimpan')
     } catch (e) {
       console.error('upload candidate photo error', e)
-      toast.error('Gagal mengunggah foto')
+      toast.error('Gagal memproses foto')
     }
   }
 
@@ -253,7 +249,7 @@ export function KelolaKandidat() {
                   />
                 </div>
               </div>
-              {/* Dropzone */}
+              {/* Upload dari device (drag & drop atau pilih file) */}
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
                 onDragLeave={() => setIsDragging(false)}
@@ -262,8 +258,8 @@ export function KelolaKandidat() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <div className="font-medium">Upload Foto Kandidat</div>
-                    <div className="text-muted-foreground">Tarik & lepas gambar di sini, atau pilih file</div>
+                    <div className="font-medium">Upload dari Device</div>
+                    <div className="text-muted-foreground">Tarik & lepas gambar di sini, atau pilih file (disimpan ke field photo_url)</div>
                   </div>
                   <Input
                     type="file"

@@ -18,77 +18,11 @@ export function QuickActions() {
   const { isAdmin, isPanitia, isMember } = useAuth()
   const router = useRouter()
 
-  if (isAdmin) {
-    return (
-      <Card className="bg-gradient-to-br from-blue-50 to-white shadow-sm border-l-4 border-l-blue-500 rounded-lg">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-blue-900">Aksi Cepat - Admin</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 px-3 pb-3">
-          <Button 
-            variant="outline" 
-            className="w-full justify-start h-10 text-left bg-white hover:bg-blue-50 border-blue-200 rounded-md shadow-none"
-            onClick={() => router.push('/dashboard/kelola-pengguna')}
-          >
-            <IconUserPlus className="mr-2 h-4 w-4 text-blue-600" />
-            <span className="text-xs font-medium text-blue-900">Tambah Pengguna</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="w-full justify-start h-10 text-left bg-white hover:bg-blue-50 border-blue-200 rounded-md shadow-none"
-            onClick={() => router.push('/dashboard/pengaturan-pemilihan')}
-          >
-            <IconCalendar className="mr-2 h-4 w-4 text-blue-600" />
-            <span className="text-xs font-medium text-blue-900">Atur Jadwal</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="w-full justify-start h-10 text-left bg-white hover:bg-blue-50 border-blue-200 rounded-md shadow-none"
-            onClick={() => router.push('/dashboard/hasil-pemilihan')}
-          >
-            <IconChartBar className="mr-2 h-4 w-4 text-blue-600" />
-            <span className="text-xs font-medium text-blue-900">Lihat Laporan</span>
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  }
+  // Remove Admin quick actions card per request
+  if (isAdmin) return null
 
-  if (isPanitia) {
-    return (
-      <Card className="bg-gradient-to-br from-blue-50 to-white shadow-sm border-l-4 border-l-blue-500 rounded-lg">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-blue-900">Aksi Cepat - Panitia</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 px-3 pb-3">
-          <Button 
-            variant="outline" 
-            className="w-full justify-start h-10 text-left bg-white hover:bg-blue-50 border-blue-200 rounded-md shadow-none"
-            onClick={() => router.push('/dashboard/kelola-pengguna')}
-          >
-            <IconCheck className="mr-2 h-4 w-4 text-blue-600" />
-            <span className="text-xs font-medium text-blue-900">Verifikasi Pemilih</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="w-full justify-start h-10 text-left bg-white hover:bg-blue-50 border-blue-200 rounded-md shadow-none"
-            onClick={() => router.push('/dashboard/kelola-kandidat')}
-          >
-            <IconUsers className="mr-2 h-4 w-4 text-blue-600" />
-            <span className="text-xs font-medium text-blue-900">Kelola Kandidat</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="w-full justify-start h-10 text-left bg-white hover:bg-blue-50 border-blue-200 rounded-md shadow-none"
-            onClick={() => router.push('/dashboard/hasil-pemilihan')}
-          >
-            <IconEye className="mr-2 h-4 w-4 text-blue-600" />
-            <span className="text-xs font-medium text-blue-900">Pantau Hasil</span>
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  }
+  // Remove Panitia quick actions card per request
+  if (isPanitia) return null
 
   if (isMember) {
     return (

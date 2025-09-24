@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { supabase, Candidate } from "@/lib/supabase"
+import { useAuth } from "@/contexts/AuthContext"
 import { IconSearch, IconUser, IconCalendar, IconTarget } from "@tabler/icons-react"
 
 export function ProfilKandidat() {
+  const { isMember } = useAuth()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -128,13 +130,15 @@ export function ProfilKandidat() {
                 </div>
               </div>
 
-              {/* Aksi */}
-              <div className="flex items-center justify-center gap-3">
-                <Button variant="outline" className="rounded-md">Lihat Detail</Button>
-                <a href="/dashboard/pilih-kandidat">
-                  <Button className="rounded-md">Pilih</Button>
-                </a>
-              </div>
+              {/* Aksi (hanya untuk Anggota) */}
+              {isMember && (
+                <div className="flex items-center justify-center gap-3">
+                  <Button variant="outline" className="rounded-md">Lihat Detail</Button>
+                  <a href="/dashboard/pilih-kandidat">
+                    <Button className="rounded-md">Pilih</Button>
+                  </a>
+                </div>
+              )}
               {/* Info Tambahan */}
               <div className="pt-2 border-t border-gray-100 text-xs text-muted-foreground flex items-center justify-center gap-2">
                 <IconCalendar className="h-4 w-4" />

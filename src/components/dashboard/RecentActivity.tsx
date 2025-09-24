@@ -148,35 +148,30 @@ export function RecentActivity() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Aktivitas Terbaru</CardTitle>
+    <Card className="bg-white shadow-sm border-0 rounded-lg">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold text-gray-900">Aktivitas Terbaru</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 pb-3">
         {activities.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
-            <div className="text-lg font-medium mb-2">Belum ada aktivitas</div>
-            <div className="text-sm">Aktivitas akan muncul di sini</div>
+            <div className="text-sm font-medium mb-1">Belum ada aktivitas</div>
+            <div className="text-xs">Aktivitas akan muncul di sini</div>
           </div>
         ) : (
-          <div className="max-h-96 overflow-y-auto space-y-4">
+          <div className="max-h-72 overflow-y-auto divide-y rounded-md border">
             {activities.map((activity) => (
-              <div key={activity.id} className="flex items-start space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+              <div key={activity.id} className="flex items-start gap-3 p-3 bg-white/50 hover:bg-gray-50">
                 <div className="flex-shrink-0 mt-0.5">
                   {getActivityIcon(activity.type)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-base text-foreground font-medium leading-relaxed">
+                  <p className="text-sm text-gray-900 leading-relaxed">
                     {activity.message}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {new Date(activity.timestamp).toLocaleString('id-ID', {
-                      weekday: 'short',
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
+                      weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                     })}
                   </p>
                 </div>

@@ -22,6 +22,22 @@ export function RecentActivity() {
     try {
       const items: Activity[] = []
 
+      type VoterRow = {
+        name: string
+        class: string
+        voted_for: number | null
+        voted_at: string | null
+      }
+      type CandidateNameRow = {
+        id: number
+        name: string
+      }
+      type CandidateNewRow = {
+        id: number
+        name: string
+        created_at: string | null
+      }
+
       // Votes dari tabel voters (has_voted = true)
       const { data: voterRows } = await supabase
         .from('voters')
@@ -31,17 +47,25 @@ export function RecentActivity() {
         .limit(15)
 
       if (voterRows && voterRows.length > 0) {
-        const ids = Array.from(new Set(voterRows.map((r: any) => r.voted_for).filter((x: any) => x != null)))
+        const voterRowsTyped = voterRows as VoterRow[]
+        const ids = Array.from(
+          new Set(
+            voterRowsTyped
+              .map((r) => r.voted_for)
+              .filter((x): x is number => x != null)
+          )
+        )
         let candMap: Record<number, string> = {}
         if (ids.length > 0) {
           const { data: candRows } = await supabase
             .from('candidates')
             .select('id, name')
             .in('id', ids)
-          candMap = Object.fromEntries((candRows || []).map((c: any) => [c.id, c.name]))
+          const candRowsTyped = (candRows ?? []) as CandidateNameRow[]
+          candMap = Object.fromEntries(candRowsTyped.map((c) => [c.id, c.name]))
         }
-        for (const r of voterRows as any[]) {
-          const nama = candMap[r.voted_for] || String(r.voted_for)
+        for (const r of voterRowsTyped) {
+          const nama = r.voted_for != null ? (candMap[r.voted_for] || String(r.voted_for)) : '-'
           items.push({ id: `vote-${r.name}-${r.voted_at}`, type: 'vote', message: `${r.name} (${r.class}) memilih ${nama}`, timestamp: r.voted_at || new Date().toISOString() })
         }
       }
@@ -52,7 +76,7 @@ export function RecentActivity() {
         .select('id, name, created_at')
         .order('created_at', { ascending: false })
         .limit(10)
-      for (const c of (candNew || []) as any[]) {
+      for (const c of ((candNew ?? []) as CandidateNewRow[])) {
         items.push({ id: `cand-${c.id}`, type: 'candidate_added', message: `Kandidat baru: ${c.name}`, timestamp: c.created_at || new Date().toISOString() })
       }
 
@@ -64,7 +88,7 @@ export function RecentActivity() {
     } finally {
       setLoading(false)
     }
-  }, [isAdmin])
+  }, [])
 
   useEffect(() => {
     if (isAdmin || isPanitia) {

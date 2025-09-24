@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 interface CandidateContextType {
   candidates: Candidate[]
   loading: boolean
+  error: string | null
   addCandidate: (candidate: Omit<Candidate, 'id' | 'created_at' | 'update_at'>) => void
   updateCandidate: (id: number, candidate: Partial<Candidate>) => void
   deleteCandidate: (id: number) => void
@@ -18,18 +19,52 @@ const CandidateContext = createContext<CandidateContextType | undefined>(undefin
 export function CandidateProvider({ children }: { children: ReactNode }) {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchCandidates = async () => {
     try {
+      setError(null)
+      console.log('Starting to fetch candidates...')
+      
       const { data, error } = await supabase
         .from('candidates')
         .select('id, name, class, photo_url, vision, mission, votes, created_at, update_at')
         .order('id', { ascending: false })
 
-      if (error) throw error
-      setCandidates(data || [])
+      console.log('Supabase response:', { data, error })
+
+      if (error) {
+        console.error('Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        throw new Error(`Database error: ${error.message}`)
+      }
+
+      if (!data) {
+        console.warn('No data returned from Supabase')
+        setCandidates([])
+        return
+      }
+
+      console.log('Successfully fetched candidates:', data.length, 'items')
+      setCandidates(data)
     } catch (error) {
-      console.error('Error fetching candidates:', error)
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : `Unknown error: ${JSON.stringify(error)}`
+      
+      console.error('Error fetching candidates:', {
+        error: errorMessage,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      
+      setError(errorMessage)
+      setCandidates([]) // Set empty array on error
     } finally {
       setLoading(false)
     }
@@ -75,6 +110,7 @@ export function CandidateProvider({ children }: { children: ReactNode }) {
       value={{ 
         candidates, 
         loading, 
+        error,
         addCandidate, 
         updateCandidate, 
         deleteCandidate, 

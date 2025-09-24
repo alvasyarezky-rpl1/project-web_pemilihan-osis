@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,8 +10,17 @@ import { IconBallpen, IconCheck, IconClock, IconUser } from "@tabler/icons-react
 import { toast } from "sonner"
 import Image from "next/image"
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const maybe = (error as { message?: unknown }).message
+    if (typeof maybe === 'string') return maybe
+  }
+  return String(error)
+}
+
 export function PilihKandidat() {
-  const { user } = useAuth()
+  useAuth()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null)
   const [selectedWakil, setSelectedWakil] = useState<number | null>(null)
@@ -19,7 +28,6 @@ export function PilihKandidat() {
   const [loading, setLoading] = useState(true)
   const [voting, setVoting] = useState(false)
   const [electionStatus, setElectionStatus] = useState<'upcoming' | 'active' | 'ended' | 'none'>('none')
-  const [activeElectionId, setActiveElectionId] = useState<number | null>(null)
   const [eventInfo, setEventInfo] = useState<{ id: string, title: string, start_date: string, end_date: string, status: string } | null>(null)
   const [joined, setJoined] = useState(false)
   const [teams, setTeams] = useState<Array<{ id: number, team_name: string, ketua?: Candidate, wakil?: Candidate }>>([])
@@ -29,11 +37,7 @@ export function PilihKandidat() {
   const [voterEmail, setVoterEmail] = useState<string>("")
   const [voteCounts, setVoteCounts] = useState<Record<number, number>>({})
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       // generate device uuid for anonymous actions
       const getDeviceUserId = (): string => {
@@ -63,7 +67,7 @@ export function PilihKandidat() {
         const now = new Date()
         const startDate = election.start_date ? new Date(election.start_date) : new Date()
         const endDate = election.end_date ? new Date(election.end_date) : new Date()
-        setActiveElectionId(election.id as unknown as number)
+        // election.id may be used later if needed
         
         if (now < startDate) {
           setElectionStatus('upcoming')
@@ -88,7 +92,6 @@ export function PilihKandidat() {
         }
       } else {
         setElectionStatus('none')
-        setActiveElectionId(null)
       }
 
       // Fetch latest approved/active event and its teams
@@ -151,10 +154,11 @@ export function PilihKandidat() {
           .from('voters')
           .select('voted_for')
           .eq('has_voted', true)
+        type VoterVoteRow = { voted_for: number | null }
         const map: Record<number, number> = {}
-        for (const r of voteRows || []) {
-          if ((r as any).voted_for == null) continue
-          const idNum = Number((r as any).voted_for)
+        for (const r of ((voteRows as VoterVoteRow[] | null) || [])) {
+          if (r.voted_for == null) continue
+          const idNum = Number(r.voted_for)
           map[idNum] = (map[idNum] || 0) + 1
         }
         setVoteCounts(map)
@@ -175,7 +179,11 @@ export function PilihKandidat() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [eventInfo])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleVote = async () => {
     if (!selectedCandidate) return
@@ -227,7 +235,7 @@ export function PilihKandidat() {
       setSelectedCandidate(null)
       await fetchData()
     } catch (error: unknown) {
-      const msg = (error as any)?.message || (error as any)?.error?.message || 'Gagal memilih'
+      const msg = getErrorMessage(error) || 'Gagal memilih'
       console.error('Error voting:', error)
       toast.error(msg)
     } finally {
@@ -297,8 +305,7 @@ export function PilihKandidat() {
     }
   }
 
-  const status = getStatusMessage()
-  const isEventActive = !!(eventInfo && eventInfo.status === 'active')
+  getStatusMessage()
   // Longgarkan agar user bisa memilih selama belum pernah memilih
   const canVote = !hasVoted
 
@@ -550,8 +557,8 @@ export function PilihKandidat() {
                           setHasVoted(true)
                           setSelectedCandidate(null)
                           await fetchData()
-                        } catch (e) {
-                          const msg = (e as any)?.message || (e as any)?.error?.message || 'Gagal menyimpan suara'
+                        } catch (e: unknown) {
+                          const msg = getErrorMessage(e) || 'Gagal menyimpan suara'
                           console.error('Insert voters error:', e)
                           toast.error(msg)
                         } finally { setVoting(false) }

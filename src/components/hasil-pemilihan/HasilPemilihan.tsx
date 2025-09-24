@@ -2,25 +2,33 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { IconChartBar, IconTrophy, IconUsers, IconBallpen } from "@tabler/icons-react"
+import { Button } from "@/components/ui/button"
+import { IconTrophy, IconUsers, IconBallpen, IconRefresh, IconChartBar } from "@tabler/icons-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
-import Image from "next/image"
 import { supabase } from "@/lib/supabase"
 
 interface VoteResult {
   candidate_id: string
   candidate_name: string
+  candidate_class: string
   candidate_photo: string
   votes: number
   percentage: number
 }
 
+interface ElectionStatus {
+  is_active: boolean
+  election_name: string
+}
+
 export function HasilPemilihan() {
   const [results, setResults] = useState<VoteResult[]>([])
   const [totalVotes, setTotalVotes] = useState(0)
+  const [totalCandidates, setTotalCandidates] = useState(0)
   const [totalVoters, setTotalVoters] = useState(0)
+  const [, setElectionStatus] = useState<ElectionStatus>({ is_active: true, election_name: "Pemilihan Ketua OSIS" })
   const [loading, setLoading] = useState(true)
+  const [chartType, setChartType] = useState<'pie' | 'bar'>('pie')
 
   useEffect(() => {
     fetchResults()
@@ -42,33 +50,50 @@ export function HasilPemilihan() {
       const candidateIds = Object.keys(byCandidate).map(Number)
       const totalVotesCount = (voterRows || []).length
 
-      // Ambil info kandidat
-      let candMap: Record<string, { name: string; photo: string }> = {}
+      // Ambil info kandidat dengan class
+      let candMap: Record<string, { name: string; class: string; photo: string }> = {}
       if (candidateIds.length > 0) {
         const { data: candRows } = await supabase
           .from('candidates')
-          .select('id, name, photo_url')
+          .select('id, name, class, photo_url')
           .in('id', candidateIds)
-        candMap = Object.fromEntries(((candRows as Array<{ id: number; name: string; photo_url: string | null }> | null) || []).map((c) => [c.id, { name: c.name, photo: c.photo_url || '' }]))
+        candMap = Object.fromEntries(((candRows as Array<{ id: number; name: string; class: string | null; photo_url: string | null }> | null) || []).map((c) => [c.id, { name: c.name, class: c.class || 'Unknown', photo: c.photo_url || '' }]))
       }
 
-      // Total voters: gunakan jumlah baris voters (atau yang has_voted/semua)
+      // Ambil semua kandidat untuk total count
+      const { count: candidatesCount } = await supabase
+        .from('candidates')
+        .select('*', { count: 'exact', head: true })
+
+      // Ambil total voters (semua pemilih terdaftar)
       const { count: votersCount } = await supabase
         .from('voters')
         .select('*', { count: 'exact', head: true })
+
+      // Ambil status pemilihan
+      const { data: electionData } = await supabase
+        .from('election_settings')
+        .select('election_name, is_active')
+        .single()
 
       // Susun hasil
       const resultsComputed: VoteResult[] = candidateIds.map(id => {
         const votes = byCandidate[id] || 0
         const name = candMap[id]?.name || String(id)
+        const class_name = candMap[id]?.class || 'Unknown'
         const photo = candMap[id]?.photo || ''
         const percentage = totalVotesCount > 0 ? Math.round((votes / totalVotesCount) * 100) : 0
-        return { candidate_id: String(id), candidate_name: name, candidate_photo: photo, votes, percentage }
+        return { candidate_id: String(id), candidate_name: name, candidate_class: class_name, candidate_photo: photo, votes, percentage }
       }).sort((a, b) => b.votes - a.votes)
 
       setResults(resultsComputed)
       setTotalVotes(totalVotesCount)
+      setTotalCandidates(candidatesCount || 0)
       setTotalVoters(votersCount || 0)
+      setElectionStatus({
+        is_active: electionData?.is_active ?? true,
+        election_name: electionData?.election_name ?? "Pemilihan Ketua OSIS"
+      })
     } catch (error) {
       console.error('Error fetching results:', error)
     } finally {
@@ -93,93 +118,117 @@ export function HasilPemilihan() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Hasil Pemilihan</h1>
+        <h1 className="text-2xl font-bold">Hasil Pemilihan Ketua OSIS</h1>
         <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
       </div>
     )
   }
 
+  const winner = results.length > 0 ? results[0] : null
+  const participationPercent = totalVoters > 0 ? Math.round((totalVotes / totalVoters) * 100) : 0
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold">Hasil Pemilihan</h1>
-        <Badge variant="default">{totalVotes} suara</Badge>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Hasil Pemilihan Ketua OSIS</h1>
+        <p className="text-gray-600 mt-1">Lihat hasil pemilihan dan statistik voting</p>
       </div>
 
-      {/* Summary Cards */}
+      {/* Pemenang Sementara Card */}
+      {winner && (
+        <Card className="bg-orange-500 text-white border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <IconTrophy className="h-12 w-12 text-orange-200" />
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold mb-1">Pemenang Sementara</h2>
+                <h3 className="text-2xl font-bold mb-1">{winner.candidate_name}</h3>
+                <p className="text-orange-100 mb-1">{winner.candidate_class}</p>
+                <p className="text-orange-200 text-sm">{winner.votes} suara</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Suara</CardTitle>
-            <IconBallpen className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Total Suara</CardTitle>
+            <IconBallpen className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalVotes}</div>
-            <p className="text-xs text-muted-foreground">
-              dari {totalVoters} pemilih terdaftar
-            </p>
+            <div className="text-2xl font-bold text-gray-900">{totalVotes}</div>
+            <p className="text-xs text-gray-500">suara sah yang masuk</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tingkat Partisipasi</CardTitle>
-            <IconUsers className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Tingkat Partisipasi</CardTitle>
+            <IconUsers className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {totalVoters > 0 ? Math.round((totalVotes / totalVoters) * 100) : 0}%
-            </div>
-            <p className="text-xs text-muted-foreground">
-              pemilih berpartisipasi
-            </p>
+            <div className="text-2xl font-bold text-gray-900">{participationPercent}%</div>
+            <p className="text-xs text-gray-500">pemilih berpartisipasi</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Jumlah Kandidat</CardTitle>
-            <IconChartBar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Jumlah Kandidat</CardTitle>
+            <IconChartBar className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{results.length}</div>
-            <p className="text-xs text-muted-foreground">
-              kandidat berpartisipasi
-            </p>
+            <div className="text-2xl font-bold text-gray-900">{totalCandidates}</div>
+            <p className="text-xs text-gray-500">kandidat berpartisipasi</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Bar Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Hasil Suara (Bar Chart)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="votes" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
+      {/* Chart Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold">Hasil Pemilihan</CardTitle>
+              <p className="text-sm text-gray-600 mt-1">Total suara: {totalVotes}</p>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Pie Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribusi Suara (Pie Chart)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="flex gap-2">
+              <Button
+                variant={chartType === 'pie' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setChartType('pie')}
+                className={chartType === 'pie' ? 'bg-blue-600 text-white' : ''}
+              >
+                Pie Chart
+              </Button>
+              <Button
+                variant={chartType === 'bar' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setChartType('bar')}
+                className={chartType === 'bar' ? 'bg-blue-600 text-white' : ''}
+              >
+                Bar Chart
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchResults}
+                className="flex items-center gap-2"
+              >
+                <IconRefresh className="h-4 w-4" />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              {chartType === 'pie' ? (
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -197,66 +246,16 @@ export function HasilPemilihan() {
                   </Pie>
                   <Tooltip />
                 </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Detailed Results */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Hasil Detail</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {results.map((result, index) => (
-              <div key={result.candidate_id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded-full text-sm font-bold">
-                    {index + 1}
-                  </div>
-                  {result.candidate_photo ? (
-                    <Image
-                      src={result.candidate_photo}
-                      alt={result.candidate_name}
-                      width={40}
-                      height={40}
-                      className="rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                      <IconUsers className="h-5 w-5 text-gray-400" />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-medium">{result.candidate_name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {result.votes} suara ({result.percentage}%)
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {index === 0 && totalVotes > 0 && (
-                    <Badge variant="default" className="bg-yellow-500">
-                      <IconTrophy className="mr-1 h-3 w-3" />
-                      Pemenang
-                    </Badge>
-                  )}
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${result.percentage}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {results.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                Belum ada hasil pemilihan
-              </div>
-            )}
+              ) : (
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="votes" fill="#8884d8" />
+                </BarChart>
+              )}
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>

@@ -21,7 +21,7 @@ interface Notification {
 }
 
 export function NotificationSystem() {
-  const { user, isAdmin, isPanitia, isMember } = useAuth()
+  const { isAdmin, isPanitia, isMember } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -42,8 +42,9 @@ export function NotificationSystem() {
 
       if (error) throw error
 
-      setNotifications(data || [])
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0)
+      const list = ((data ?? []) as Notification[])
+      setNotifications(list)
+      setUnreadCount(list.filter((n: Notification) => !n.is_read).length)
     } catch (error) {
       console.error('Error fetching notifications:', error)
     } finally {

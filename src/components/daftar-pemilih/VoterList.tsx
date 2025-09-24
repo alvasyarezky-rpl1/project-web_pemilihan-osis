@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,7 +22,6 @@ type CandidateMap = Record<number, string>
 export function VoterList() {
   const { isAdmin } = useAuth()
   const [rows, setRows] = useState<Voter[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<"all" | "voted" | "not_voted">("all")
 
@@ -39,27 +38,27 @@ export function VoterList() {
 
   async function load() {
     try {
-      setLoading(true)
       const { data, error } = await supabase
         .from('voters')
         .select('id, name, class, has_voted, voted_at, voted_for')
         .order('voted_at', { ascending: false, nullsFirst: false })
       if (error) throw error
-      setRows(data || [])
+      setRows(((data ?? []) as Voter[]))
 
       // build candidate map
-      const ids = Array.from(new Set((data || []).map(v => v.voted_for).filter((x): x is number => x != null)))
+      const dataTyped = ((data ?? []) as Voter[])
+      const ids = Array.from(new Set(dataTyped.map((v) => v.voted_for).filter((x): x is number => x != null)))
       if (ids.length > 0) {
         const { data: cands } = await supabase
           .from('candidates')
           .select('id, name')
           .in('id', ids)
-        setCandMap(Object.fromEntries((cands || []).map(c => [c.id, c.name])))
+        const candsTyped = ((cands ?? []) as { id: number; name: string }[])
+        setCandMap(Object.fromEntries(candsTyped.map((c) => [c.id, c.name])))
       } else {
         setCandMap({})
       }
     } finally {
-      setLoading(false)
     }
   }
 

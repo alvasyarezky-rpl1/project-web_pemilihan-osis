@@ -1,15 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { supabase, User } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 import { IconPlus, IconEdit, IconTrash, IconCheck, IconX, IconCalendar, IconClock, IconUsers } from "@tabler/icons-react"
 import { toast } from "sonner"
@@ -22,7 +21,9 @@ interface Event {
   end_date: string
   status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed'
   created_by: string
+  created_by_name?: string
   approved_by?: string
+  approved_by_name?: string
   approved_at?: string
   rejection_reason?: string
   created_at: string
@@ -60,11 +61,7 @@ export function EventsManagement() {
     end_date: ""
   })
 
-  useEffect(() => {
-    fetchEvents()
-  }, [])
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('events')
@@ -83,7 +80,11 @@ export function EventsManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchEvents()
+  }, [fetchEvents])
 
   const calculateStats = (eventsData: Event[]) => {
     const stats = {
@@ -449,7 +450,7 @@ export function EventsManagement() {
               {filteredEvents(status).length === 0 && (
                 <Card>
                   <CardContent className="p-8 text-center">
-                    <p className="text-gray-500">Tidak ada acara dengan status "{status}"</p>
+                    <p className="text-gray-500">Tidak ada acara dengan status &quot;{status}&quot;</p>
                   </CardContent>
                 </Card>
               )}

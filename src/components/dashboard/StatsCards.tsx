@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { supabase } from "@/lib/supabase"
+import { useCandidates } from "@/contexts/CandidateContext"
 import { useEffect, useState, useCallback } from "react"
 import { IconUsers, IconBallpen } from "@tabler/icons-react"
 
@@ -12,6 +13,7 @@ interface StatsData {
 }
 
 export function StatsCards() {
+  const { candidates } = useCandidates()
   const [stats, setStats] = useState<StatsData>({
     totalCandidates: 0,
     totalVoters: 0,
@@ -38,7 +40,7 @@ export function StatsCards() {
         .eq('has_voted', true)
 
       setStats({
-        totalCandidates: candidatesCount || 0,
+        totalCandidates: (candidates?.length ?? 0) || candidatesCount || 0,
         totalVoters: votersCount || 0,
         votedCount: votesCount || 0,
       })
@@ -53,11 +55,28 @@ export function StatsCards() {
     fetchStats()
   }, [fetchStats])
 
+  // Reflect candidate list changes immediately
+  useEffect(() => {
+    setStats(prev => ({
+      ...prev,
+      totalCandidates: candidates?.length ?? prev.totalCandidates,
+    }))
+  }, [candidates])
+
   // Realtime: update counts when voters table changes
   useEffect(() => {
     const channel = supabase
       .channel('statscards-voters')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'voters' }, () => fetchStats())
+      .subscribe()
+    return () => { try { supabase.removeChannel(channel) } catch {} }
+  }, [fetchStats])
+
+  // Realtime: update when candidates table changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('statscards-candidates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'candidates' }, () => fetchStats())
       .subscribe()
     return () => { try { supabase.removeChannel(channel) } catch {} }
   }, [fetchStats])

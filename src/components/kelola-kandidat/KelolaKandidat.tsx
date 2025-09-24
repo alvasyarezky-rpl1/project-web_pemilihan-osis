@@ -24,6 +24,7 @@ export function KelolaKandidat() {
     vision: "",
     mission: "",
   })
+  const [isDragging, setIsDragging] = useState(false)
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,6 +103,33 @@ export function KelolaKandidat() {
       mission: candidate.mission || "",
     })
     setShowForm(true)
+  }
+
+  async function uploadPhotoToStorage(file: File): Promise<string> {
+    if (DEMO_MODE) {
+      // Demo mode: skip remote upload, use local preview URL
+      return URL.createObjectURL(file)
+    }
+    const path = `candidates/${Date.now()}-${file.name}`
+    const { error } = await supabase.storage
+      .from('candidate-photos')
+      .upload(path, file, { upsert: true })
+    if (error) throw error
+    const { data } = supabase.storage.from('candidate-photos').getPublicUrl(path)
+    return data.publicUrl
+  }
+
+  async function handleFiles(files: FileList | null) {
+    const file = files?.[0]
+    if (!file) return
+    try {
+      const url = await uploadPhotoToStorage(file)
+      setFormData(prev => ({ ...prev, photo_url: url }))
+      toast.success('Foto berhasil diunggah')
+    } catch (e) {
+      console.error('upload candidate photo error', e)
+      toast.error('Gagal mengunggah foto')
+    }
   }
 
   const handleDelete = async (candidateId: number) => {
@@ -229,6 +257,32 @@ export function KelolaKandidat() {
                   />
                 </div>
               </div>
+              {/* Dropzone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFiles(e.dataTransfer.files) }}
+                className={`border-2 border-dashed rounded-md p-4 text-sm ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium">Upload Foto Kandidat</div>
+                    <div className="text-muted-foreground">Tarik & lepas gambar di sini, atau pilih file</div>
+                  </div>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFiles(e.target.files)}
+                    className="w-auto"
+                  />
+                </div>
+                {formData.photo_url && (
+                  <div className="mt-3">
+                    <Image src={formData.photo_url} alt="Preview" width={120} height={120} className="rounded-md object-cover" />
+                  </div>
+                )}
+              </div>
+
               <div>
                 <Label htmlFor="visi">Visi</Label>
                 <Textarea

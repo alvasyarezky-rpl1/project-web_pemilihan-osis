@@ -78,3 +78,12 @@ export interface VoterRow {
   created_at: string | null
   update_at: string | null
 }
+
+// Application user type (matches `users` table rows)
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: 'admin' | 'panitia' | 'member'
+  created_at: string
+}
